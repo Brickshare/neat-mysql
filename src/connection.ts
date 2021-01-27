@@ -10,9 +10,9 @@ import {
   ResultSetHeader
 } from 'mysql2/promise';
 import logger from '@src/logger';
-import config from 'config';
 import bluebird from 'bluebird';
 import { formatSQL } from './util';
+import config from 'config';
 
 const dbConfig = config.get<PoolOptions>('dbConfig');
 const sshConfig = config.get<PoolOptions>('sshConfig');

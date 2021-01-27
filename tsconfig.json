@@ -4,10 +4,14 @@
     "module": "commonjs",
     "lib": ["es2017", "esnext"],
     "esModuleInterop": true,
+
     "allowJs": false,
     "checkJs": false,
+
+    "declaration": true,
+    "sourceMap": true,
+
     "jsx": "preserve",
-    "sourceMap": false,
     "outDir": "dist/",
     "removeComments": true,
     "noEmit": false,
