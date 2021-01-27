@@ -10,9 +10,9 @@ import {
   ResultSetHeader
 } from 'mysql2/promise';
 import logger from '@src/logger';
-import sqlFormatter from 'sql-formatter';
 import config from 'config';
 import bluebird from 'bluebird';
+import { formatSQL } from './util';
 
 const dbConfig = config.get<PoolOptions>('dbConfig');
 const sshConfig = config.get<PoolOptions>('sshConfig');
@@ -184,14 +184,12 @@ export class Connection {
       const [response] = await this.conn.execute(sql, args);
       return response;
     } catch (err) {
-      const sqlFormatted = sqlFormatter.format('format' in this.conn ? this.conn.format(sql, args) : sql);
-      logger.error(`${err} - failing SQL: ${sqlFormatted}`);
+      logger.error(`${err} - failing SQL: ${formatSQL(sql, args)}`);
       throw Error(err);
     }
   }
 
   private logSQL(sql: string, args: QueryArg[]) {
-    const sqlFormatted = sqlFormatter.format('format' in this.conn ? this.conn.format(sql, args) : sql);
-    logger.debug(sqlFormatted);
+    logger.debug(formatSQL(sql, args));
   }
 }
