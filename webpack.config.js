@@ -16,8 +16,8 @@ module.exports = {
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
-      // { test: /\.(js|ts)x?$/, exclude: /node_modules/, use: ['babel-loader'] }
+      { test: /\.tsx?$/, loader: 'ts-loader' },
+      { test: /\.(js|ts)x?$/, exclude: /node_modules/, use: ['babel-loader'] }
     ]
   },
   plugins: [new CleanWebpackPlugin()]
