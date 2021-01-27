@@ -28,7 +28,7 @@ const poolOptions: PoolOptions = {
 let pool: Pool | null = null;
 export const getPool = async () => {
   if (!pool) {
-    pool = await connectToPool()[0];
+    pool = (await connectToPool())[0];
   }
   return pool!;
 };
