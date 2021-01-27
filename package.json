@@ -1,0 +1,53 @@
+{
+  "name": "neat-mysql",
+  "version": "0.0.1",
+  "description": "a neat way to interact with MySQL from Node.js",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run clean && npm run compile",
+    "clean": "rm -rf dist && mkdir dist",
+    "compile": "tsc -p ./tsconfig.build.json && webpack && cp package.json dist/",
+    "test": "npm run test:unit",
+    "test:unit": "cross-env NODE_ENV=dev jest -c jest.config.unit.js",
+    "wait": "wait-on",
+    "wait-on": "npm run wait -- tcp:$DB_HOST:3306"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Brickshare/ledger.git"
+  },
+  "author": "Rasmus von Syberg",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Brickshare/neat-mysql/issues"
+  },
+  "homepage": "https://github.com/Brickshare/neat-mysql#readme",
+  "dependencies": {
+    "bluebird": "^3.7.2",
+    "config": "^3.3.3",
+    "mysql2": "^2.2.5",
+    "sql-formatter": "^4.0.0-beta.3",
+    "ssh2": "^0.8.9",
+    "winston": "^3.3.3",
+    "winston-gke-formatter": "0.0.2"
+  },
+  "devDependencies": {
+    "@types/bluebird": "^3.5.33",
+    "@types/config": "0.0.38",
+    "@types/jest": "^26.0.15",
+    "@types/mysql2": "github:types/mysql2",
+    "@types/sql-formatter": "^2.3.0",
+    "@types/ssh2": "^0.5.46",
+    "clean-webpack-plugin": "^3.0.0",
+    "inline-source-map": "^0.6.2",
+    "jest": "^26.6.3",
+    "mysql-schema-ts": "^1.6.2",
+    "prettier": "^1.19.1",
+    "ts-jest": "^26.4.4",
+    "ts-loader": "^8.0.14",
+    "tslib": "^2.1.0",
+    "typescript": "^4.1.3",
+    "webpack": "^5.18.0",
+    "webpack-cli": "^4.4.0"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "dbConfig": {
+    "host": "DB_HOST",
+    "port": "DB_PORT",
+    "database": "DB_DATABASE",
+    "user": "DB_USERNAME",
+    "password": "DB_PASSWORD"
+  },
+  "sshConfig": {
+    "host": "SSH_HOST",
+    "port": "SSH_PORT",
+    "username": "SSH_USER",
+    "password": "SSH_PASSWORD"
+  }
+}
