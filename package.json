@@ -7,6 +7,7 @@
     "build": "npm run clean && npm run compile",
     "clean": "rm -rf dist && mkdir dist",
     "compile": "tsc -p ./tsconfig.build.json && webpack && cp package.json dist/",
+    "distribute": "npm run build && npm publish dist",
     "test": "npm run test:unit",
     "test:unit": "cross-env NODE_ENV=dev jest -c jest.config.unit.js",
     "wait": "wait-on",
@@ -14,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Brickshare/ledger.git"
+    "url": "git+https://github.com/Brickshare/neat-mysql.git"
   },
   "author": "Rasmus von Syberg",
   "license": "MIT",

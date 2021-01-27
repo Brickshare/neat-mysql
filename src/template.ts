@@ -6,6 +6,9 @@ import zip from 'lodash.zip';
 const getUniqueValues = (array: any[]) => (Array.isArray(array) ? [...new Set(array)] : array);
 
 const argumentToParameters = (arg: any): string => {
+  if (!arg) {
+    return '';
+  }
   if (Array.isArray(arg)) {
     return `(${createListOfSqlParams(arg.length)})`;
   }
@@ -23,16 +26,11 @@ class SQLStatement {
     this.arguments = args
       .map(getUniqueValues)
       .reduce((acc, arg) => [...acc, ...(arg instanceof SQLStatement ? arg.values : [arg])], [])
-      .flat();
-    const combined = zip(strings, args).flat();
-    this.statement = combined.reduce((statement: string, arg: any, index: number) => {
-      if (!arg) {
-        return statement;
-      }
-      if (arg instanceof SQLStatement) {
-        return `${statement}${arg.statement}`;
-      }
-      return `${statement}${index % 2 === 0 ? arg : argumentToParameters(arg)}`;
+      .flat()
+      .map(value => String(value));
+    const combined = zip(strings, args);
+    this.statement = combined.reduce((statement: string, [s, a]: any) => {
+      return `${statement}${s}${a instanceof SQLStatement ? a.statement : argumentToParameters(a)}`;
     }, '');
   }
 
