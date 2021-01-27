@@ -6,5 +6,6 @@
     "user": "root",
     "password": ""
   },
-  "sshConfig": {}
+  "sshConfig": {},
+  "logLevel": "DEBUG"
 }

@@ -11,5 +11,6 @@
     "port": "SSH_PORT",
     "username": "SSH_USER",
     "password": "SSH_PASSWORD"
-  }
+  },
+  "logLevel": "LOG_LEVEL"
 }

@@ -25,6 +25,7 @@
   "dependencies": {
     "bluebird": "^3.7.2",
     "config": "^3.3.3",
+    "lodash.zip": "^4.2.0",
     "mysql2": "^2.2.5",
     "sql-formatter": "^4.0.0-beta.3",
     "ssh2": "^0.8.9",
@@ -35,6 +36,7 @@
     "@types/bluebird": "^3.5.33",
     "@types/config": "0.0.38",
     "@types/jest": "^26.0.15",
+    "@types/lodash.zip": "^4.2.6",
     "@types/mysql2": "github:types/mysql2",
     "@types/sql-formatter": "^2.3.0",
     "@types/ssh2": "^0.5.46",
