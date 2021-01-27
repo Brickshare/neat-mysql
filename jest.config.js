@@ -10,11 +10,9 @@ module.exports = {
   coverageReporters: ['text', 'lcov'],
   coveragePathIgnorePatterns: ['^.+\\.d\\.ts$'],
 
-  setupFiles: ['reflect-metadata'], // used by type-graphql
-
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   moduleNameMapper: pathsToModuleNameMapper(tsconfigPaths, {
-    prefix: '<rootDir>/src/'
+    prefix: '<rootDir>/'
   }),
   moduleDirectories: ['node_modules', 'src'],
 

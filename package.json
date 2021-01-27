@@ -39,6 +39,7 @@
     "@types/sql-formatter": "^2.3.0",
     "@types/ssh2": "^0.5.46",
     "clean-webpack-plugin": "^3.0.0",
+    "cross-env": "^7.0.3",
     "inline-source-map": "^0.6.2",
     "jest": "^26.6.3",
     "mysql-schema-ts": "^1.6.2",
