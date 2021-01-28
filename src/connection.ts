@@ -95,10 +95,10 @@ export const executeMany = async (queries: Query[], conn?: Connection): Promise<
  * @param func method to run during transaction
  * @param transActionConnection active transaction connection to use
  */
-export async function transaction(
-  func: (conn: Connection) => Promise<any>,
+export const transaction = async <T>(
+  func: (conn: Connection) => Promise<T>,
   transActionConnection?: Connection
-): Promise<any> {
+): Promise<T> => {
   if (transActionConnection) {
     return func(transActionConnection);
   }
@@ -115,7 +115,7 @@ export async function transaction(
   } finally {
     conn.release();
   }
-}
+};
 
 export class Connection {
   conn: Pool | PoolConnection;
