@@ -1,6 +1,6 @@
 {
   "name": "neat-mysql",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "a neat way to interact with MySQL from Node.js",
   "main": "index.js",
   "scripts": {
@@ -27,7 +27,6 @@
   "dependencies": {
     "bluebird": "^3.7.2",
     "config": "^3.3.3",
-    "lodash.zip": "^4.2.0",
     "mysql2": "^2.2.5",
     "sqlstring": "^2.3.2",
     "ssh2": "^0.8.9",
@@ -39,7 +38,6 @@
     "@types/bluebird": "^3.5.33",
     "@types/config": "0.0.38",
     "@types/jest": "^26.0.15",
-    "@types/lodash.zip": "^4.2.6",
     "@types/mysql2": "github:types/mysql2",
     "@types/sqlstring": "^2.3.0",
     "@types/ssh2": "^0.5.46",
