@@ -76,6 +76,14 @@ export const query = async <T extends { [key: string]: any } = RowDataPacket>(
   conn?: Connection
 ): Promise<T[]> => (await getConnection(conn)).query(query);
 
+export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>(
+  query: Query | QueryObject,
+  conn?: Connection
+): Promise<T> => {
+  const [entity] = await (await getConnection(conn)).query<T>(query);
+  return entity;
+};
+
 export const queryMany = async <T = RowDataPacket>(queries: Query[], conn?: Connection): Promise<T[][]> =>
   (await getConnection(conn)).queryMany<T>(queries);
 
