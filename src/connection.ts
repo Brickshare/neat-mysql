@@ -14,6 +14,11 @@ import bluebird from 'bluebird';
 import { formatSQL } from './util';
 import config from 'config';
 
+type QueryObject = { sql: string; values: QueryArg[] };
+const asQuery = (query: Query | QueryObject): [string] | [string, QueryArg[]] => {
+  return Array.isArray(query) ? (query as Query) : [query.sql, query.values];
+};
+
 const dbConfig = config.get<PoolOptions>('dbConfig');
 const sshConfig = config.get<PoolOptions>('sshConfig');
 
@@ -72,7 +77,7 @@ const getConnection = async (conn?: Connection) => conn || new Connection(await 
  * @param connection
  */
 export const query = async <T extends { [key: string]: any } = RowDataPacket>(
-  query: Query,
+  query: Query | QueryObject,
   conn?: Connection
 ): Promise<T[]> => (await getConnection(conn)).query(query);
 
@@ -92,10 +97,10 @@ export const queryMany = async <T = RowDataPacket>(queries: Query[], conn?: Conn
  * @param query
  * @param connection
  */
-export const execute = async (query: Query, conn?: Connection): Promise<ResultSetHeader> =>
+export const execute = async (query: Query | QueryObject, conn?: Connection): Promise<ResultSetHeader> =>
   (await getConnection(conn)).execute(query);
 
-export const executeMany = async (queries: Query[], conn?: Connection): Promise<ResultSetHeader[]> =>
+export const executeMany = async (queries: (Query | QueryObject)[], conn?: Connection): Promise<ResultSetHeader[]> =>
   (await getConnection(conn)).executeMany(queries);
 
 /**
@@ -136,8 +141,8 @@ export class Connection {
    * Use query when doing SELECT. The expected result will be an array of RowDataPacket
    * @param query
    */
-  public async query<T = RowDataPacket>(query: Query): Promise<T[]> {
-    const [statement, args = []] = query;
+  public async query<T = RowDataPacket>(query: Query | QueryObject): Promise<T[]> {
+    const [statement, args = []] = asQuery(query);
     this.logSQL(statement, args);
     const response = await this.exec(statement, args);
     if (!Array.isArray(response)) {
@@ -148,7 +153,7 @@ export class Connection {
     return response as T[];
   }
 
-  public async queryMany<T = RowDataPacket>(queries: Query[]): Promise<T[][]> {
+  public async queryMany<T = RowDataPacket>(queries: (Query | QueryObject)[]): Promise<T[][]> {
     return await bluebird.map(queries, query => this.query<T>(query), { concurrency: 50 });
   }
 
@@ -156,8 +161,8 @@ export class Connection {
    * Use execute when doing INSERT, UPDATE or DELETE. The expected result will be a ResultSetHeader
    * @param query
    */
-  public async execute(query: Query): Promise<ResultSetHeader> {
-    const [statement, args = []] = query;
+  public async execute(query: Query | QueryObject): Promise<ResultSetHeader> {
+    const [statement, args = []] = asQuery(query);
     this.logSQL(statement, args);
     const response = await this.exec(statement, args);
     if (Array.isArray(response)) {
@@ -168,7 +173,7 @@ export class Connection {
     return response as ResultSetHeader;
   }
 
-  public async executeMany(queries: Query[]): Promise<ResultSetHeader[]> {
+  public async executeMany(queries: (Query | QueryObject)[]): Promise<ResultSetHeader[]> {
     return await bluebird.map(queries, query => this.execute(query), { concurrency: 50 });
   }
 
