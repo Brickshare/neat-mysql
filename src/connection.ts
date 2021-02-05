@@ -20,7 +20,8 @@ const asQuery = (query: Query | QueryObject): [string] | [string, QueryArg[]] =>
 };
 
 const dbConfig = config.get<PoolOptions>('dbConfig');
-const sshConfig = config.get<PoolOptions>('sshConfig');
+type SSHConfig = { host: string; port: number; username: string; password: string };
+const sshConfig = config.has('sshConfig') ? config.get<SSHConfig>('sshConfig') : null;
 
 const poolOptions: PoolOptions = {
   ...dbConfig,
@@ -48,7 +49,7 @@ export const createNewPool = (stream?: any) => {
 };
 
 export const connectToPool = async (): Promise<[Pool, Client?]> => {
-  if (!Object.keys(sshConfig).length) {
+  if (!sshConfig) {
     return [createNewPool()];
   }
 
