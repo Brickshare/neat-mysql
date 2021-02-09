@@ -20,7 +20,8 @@ const asQuery = (query: Query | QueryObject): [string] | [string, QueryArg[]] =>
 };
 
 const dbConfig = config.get<PoolOptions>('dbConfig');
-const sshConfig = config.get<PoolOptions>('sshConfig');
+type SSHConfig = { host: string; port: number; username: string; password: string };
+const sshConfig = config.has('sshConfig') ? config.get<SSHConfig>('sshConfig') : null;
 
 const poolOptions: PoolOptions = {
   ...dbConfig,
@@ -48,7 +49,7 @@ export const createNewPool = (stream?: any) => {
 };
 
 export const connectToPool = async (): Promise<[Pool, Client?]> => {
-  if (!Object.keys(sshConfig).length) {
+  if (!sshConfig) {
     return [createNewPool()];
   }
 
@@ -80,6 +81,14 @@ export const query = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject,
   conn?: Connection
 ): Promise<T[]> => (await getConnection(conn)).query(query);
+
+export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>(
+  query: Query | QueryObject,
+  conn?: Connection
+): Promise<T> => {
+  const [entity] = await (await getConnection(conn)).query<T>(query);
+  return entity;
+};
 
 export const queryMany = async <T = RowDataPacket>(queries: Query[], conn?: Connection): Promise<T[][]> =>
   (await getConnection(conn)).queryMany<T>(queries);

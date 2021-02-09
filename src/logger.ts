@@ -65,7 +65,7 @@ const logger = createLogger({
   ),
   transports: [
     new transports.Console({
-      level: config.get('logLevel')
+      level: config.has('logLevel') ? config.get('logLevel') : 'INFO'
     })
   ]
 });
