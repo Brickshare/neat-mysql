@@ -84,7 +84,7 @@ const getConnection = async (conn?: Connection) => conn || new Connection(await 
 export const query = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
   conn?: Connection
-): Promise<T[] | []> => (await getConnection(conn)).query(query);
+): Promise<T[] | [undefined]> => (await getConnection(conn)).query(query);
 
 export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
@@ -97,7 +97,7 @@ export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>
 export const queryMany = async <T = RowDataPacket>(
   queries: (Query | QueryObject | string)[],
   conn?: Connection
-): Promise<T[][] | [][]> => (await getConnection(conn)).queryMany<T>(queries);
+): Promise<(T[] | [undefined])[]> => (await getConnection(conn)).queryMany<T>(queries);
 
 /**
  * Use execute when doing INSERT, UPDATE, DELETE or SET. The expected result will be a ResultSetHeader
@@ -150,7 +150,7 @@ export class Connection {
    * Use query when doing SELECT. The expected result will be an array of RowDataPacket
    * @param query
    */
-  public async query<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T[] | []> {
+  public async query<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T[] | [undefined]> {
     const [statement, args = []] = asQuery(query);
     this.logSQL(statement, args);
     const response = await this.exec(statement, args);
@@ -159,7 +159,7 @@ export class Connection {
         'Return type error. query() should only be used for SELECT. For INSERT, UPDATE, DELETE and SET use execute()'
       );
     }
-    return response as T[] | [];
+    return response as T[] | [undefined];
   }
 
   public async queryOne<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T | undefined> {
@@ -167,7 +167,7 @@ export class Connection {
     return result as T | undefined;
   }
 
-  public async queryMany<T = RowDataPacket>(queries: (Query | QueryObject | string)[]): Promise<T[][]> {
+  public async queryMany<T = RowDataPacket>(queries: (Query | QueryObject | string)[]): Promise<(T[] | [undefined])[]> {
     return await bluebird.map(queries, query => this.query<T>(query), { concurrency: 50 });
   }
 
