@@ -10,7 +10,6 @@ import {
   ResultSetHeader
 } from 'mysql2/promise';
 import logger from '@src/logger';
-import bluebird from 'bluebird';
 import { formatSQL } from './util';
 import config from 'config';
 
@@ -84,18 +83,15 @@ const getConnection = async (conn?: Connection) => conn || new Connection(await 
 export const query = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
   conn?: Connection
-): Promise<T[] | [undefined]> => (await getConnection(conn)).query(query);
+): Promise<T[]> => (await getConnection(conn)).query(query);
 
 export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
   conn?: Connection
-) => {
+): Promise<T | null> => {
   const [entity] = await (await getConnection(conn)).query<T>(query);
   return entity;
 };
-
-export const queryMany = async <T = RowDataPacket>(queries: (Query | QueryObject | string)[], conn?: Connection) =>
-  (await getConnection(conn)).queryMany<T>(queries);
 
 /**
  * Use execute when doing INSERT, UPDATE, DELETE or SET. The expected result will be a ResultSetHeader
@@ -104,11 +100,6 @@ export const queryMany = async <T = RowDataPacket>(queries: (Query | QueryObject
  */
 export const execute = async (query: Query | QueryObject | string, conn?: Connection): Promise<ResultSetHeader> =>
   (await getConnection(conn)).execute(query);
-
-export const executeMany = async (
-  queries: (Query | QueryObject | string)[],
-  conn?: Connection
-): Promise<ResultSetHeader[]> => (await getConnection(conn)).executeMany(queries);
 
 /**
  * Starts or continues a transaction. Automatically rolls back changes if an error occurs.
@@ -148,7 +139,7 @@ export class Connection {
    * Use query when doing SELECT. The expected result will be an array of RowDataPacket
    * @param query
    */
-  public async query<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T[] | [undefined]> {
+  public async query<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T[]> {
     const [statement, args = []] = asQuery(query);
     this.logSQL(statement, args);
     const response = await this.exec(statement, args);
@@ -157,16 +148,12 @@ export class Connection {
         'Return type error. query() should only be used for SELECT. For INSERT, UPDATE, DELETE and SET use execute()'
       );
     }
-    return response as T[] | [undefined];
+    return response as T[];
   }
 
-  public async queryOne<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T | undefined> {
+  public async queryOne<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T | null> {
     const [result] = await this.query(query);
-    return result as T | undefined;
-  }
-
-  public async queryMany<T = RowDataPacket>(queries: (Query | QueryObject | string)[]): Promise<(T[] | [undefined])[]> {
-    return await bluebird.map(queries, query => this.query<T>(query), { concurrency: 50 });
+    return (result as T) ?? null;
   }
 
   /**
@@ -183,10 +170,6 @@ export class Connection {
       );
     }
     return response as ResultSetHeader;
-  }
-
-  public async executeMany(queries: (Query | QueryObject | string)[]): Promise<ResultSetHeader[]> {
-    return await bluebird.map(queries, query => this.execute(query), { concurrency: 50 });
   }
 
   /**
