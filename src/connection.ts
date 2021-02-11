@@ -31,7 +31,8 @@ const poolOptions: PoolOptions = {
   waitForConnections: true,
   maxPreparedStatements: 20,
   queueLimit: 0,
-  stringifyObjects: false
+  stringifyObjects: false,
+  connectionLimit: sshConfig ? 1 : undefined
 };
 
 let pool: Pool | null = null;
