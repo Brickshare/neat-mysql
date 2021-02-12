@@ -76,7 +76,7 @@ export const connectToPool = async (): Promise<[Pool, Client?]> => {
 const getConnection = async (conn?: Connection) => conn || new Connection(await getPool());
 
 /**
- * Use query when doing SELECT. The expected result will be an array of T (default RowDataPacket)
+ * SELECT from database. The expected result will be an array of T (default RowDataPacket)
  * @param query
  * @param connection
  */
@@ -85,12 +85,42 @@ export const query = async <T extends { [key: string]: any } = RowDataPacket>(
   conn?: Connection
 ): Promise<T[]> => (await getConnection(conn)).query(query);
 
+/**
+ * SELECT from database. The expected result will be an array of T (default RowDataPacket).
+ * Errors if no results are found.
+ * @param query
+ * @param connection
+ */
+export const queryRequired = async <T extends { [key: string]: any } = RowDataPacket>(
+  query: Query | QueryObject | string,
+  conn?: Connection,
+  errorMessage?: string
+): Promise<T[]> => (await getConnection(conn)).queryRequired(query, errorMessage);
+
+/**
+ * SELECT one entity from database. The expected result will be an array of T (default RowDataPacket).
+ * @param query
+ * @param connection
+ */
 export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
   conn?: Connection
 ): Promise<T | null> => {
-  const [entity] = await (await getConnection(conn)).query<T>(query);
-  return entity;
+  return await (await getConnection(conn)).queryOne<T>(query);
+};
+
+/**
+ * SELECT one entity from database. The expected result will be an array of T (default RowDataPacket).
+ * Errors if no results are found.
+ * @param query
+ * @param connection
+ */
+export const queryOneRequired = async <T extends { [key: string]: any } = RowDataPacket>(
+  query: Query | QueryObject | string,
+  conn?: Connection,
+  errorMessage?: string
+): Promise<T | null> => {
+  return (await getConnection(conn)).queryOneRequired<T>(query, errorMessage);
 };
 
 /**
@@ -151,9 +181,31 @@ export class Connection {
     return response as T[];
   }
 
+  public async queryRequired<T = RowDataPacket>(
+    query: Query | QueryObject | string,
+    errorMessage?: string
+  ): Promise<T[]> {
+    const result = await this.query(query);
+    if (!result?.length) {
+      throw Error(errorMessage ?? `no results found for query ${JSON.stringify(asQuery(query))}`);
+    }
+    return result as T[];
+  }
+
   public async queryOne<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T | null> {
     const [result] = await this.query(query);
     return (result as T) ?? null;
+  }
+
+  public async queryOneRequired<T = RowDataPacket>(
+    query: Query | QueryObject | string,
+    errorMessage?: string
+  ): Promise<T> {
+    const result = await this.queryOne(query);
+    if (!result) {
+      throw Error(errorMessage ?? `no results found for query ${JSON.stringify(asQuery(query))}`);
+    }
+    return result as T;
   }
 
   /**
