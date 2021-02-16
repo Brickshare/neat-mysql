@@ -95,7 +95,7 @@ export const queryRequired = async <T extends { [key: string]: any } = RowDataPa
   query: Query | QueryObject | string,
   conn?: Connection,
   errorMessage?: string
-): Promise<T[]> => (await getConnection(conn)).queryRequired(query, errorMessage);
+): Promise<[T] & T[]> => (await getConnection(conn)).queryRequired(query, errorMessage);
 
 /**
  * SELECT one entity from database. The expected result will be an array of T (default RowDataPacket).
@@ -184,12 +184,12 @@ export class Connection {
   public async queryRequired<T = RowDataPacket>(
     query: Query | QueryObject | string,
     errorMessage?: string
-  ): Promise<T[]> {
+  ): Promise<[T] & T[]> {
     const result = await this.query(query);
     if (!result?.length) {
       throw Error(errorMessage ?? `no results found for query ${JSON.stringify(asQuery(query))}`);
     }
-    return result as T[];
+    return result as [T] & T[];
   }
 
   public async queryOne<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T | null> {
