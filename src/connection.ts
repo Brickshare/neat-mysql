@@ -119,7 +119,7 @@ export const queryOneRequired = async <T extends { [key: string]: any } = RowDat
   query: Query | QueryObject | string,
   conn?: Connection,
   errorMessage?: string
-): Promise<T | null> => {
+): Promise<T> => {
   return (await getConnection(conn)).queryOneRequired<T>(query, errorMessage);
 };
 
