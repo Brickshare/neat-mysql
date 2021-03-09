@@ -1,6 +1,6 @@
 {
   "name": "neat-mysql",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "a neat way to interact with MySQL from Node.js",
   "main": "index.js",
   "scripts": {
