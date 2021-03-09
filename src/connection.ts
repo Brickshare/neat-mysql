@@ -45,7 +45,7 @@ export const getPool = async () => {
 export const createNewPool = (stream?: any) => {
   const pool = createPool({ ...poolOptions, stream });
   pool.on('connection', connection => connection.query('SET SESSION transaction_isolation="READ-COMMITTED"'));
-  pool.on('enqueue', () => logger.warning('MySQL - Waiting for available connection slot'));
+  pool.on('enqueue', () => logger.debug('MySQL - Waiting for available connection slot'));
   pool.on('acquire', connection => logger.debug('Connection %d acquired', connection.threadId));
   pool.on('release', connection => logger.debug('Connection %d released', connection.threadId));
   return pool;
