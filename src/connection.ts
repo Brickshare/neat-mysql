@@ -12,6 +12,7 @@ import {
 import logger from '@src/logger';
 import { formatSQL } from './util';
 import config from 'config';
+import { BufferOptions, stringifyBufferValue, stringifyBufferValues } from './buffer';
 
 type QueryObject = { sql: string; values: QueryArg[] };
 const asQuery = (query: Query | QueryObject | string): [string] | [string, QueryArg[]] => {
@@ -82,8 +83,9 @@ const getConnection = async (conn?: Connection) => conn || new Connection(await 
  */
 export const query = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
-  conn?: Connection
-): Promise<T[]> => (await getConnection(conn)).query(query);
+  conn?: Connection,
+  bufferOptions: BufferOptions = {}
+): Promise<T[]> => (await getConnection(conn)).query(query, bufferOptions);
 
 /**
  * SELECT from database. The expected result will be an array of T (default RowDataPacket).
@@ -94,8 +96,9 @@ export const query = async <T extends { [key: string]: any } = RowDataPacket>(
 export const queryRequired = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
   conn?: Connection,
-  errorMessage?: string
-): Promise<[T] & T[]> => (await getConnection(conn)).queryRequired(query, errorMessage);
+  errorMessage?: string,
+  bufferOptions: BufferOptions = {}
+): Promise<[T] & T[]> => (await getConnection(conn)).queryRequired(query, errorMessage, bufferOptions);
 
 /**
  * SELECT one entity from database. The expected result will be an array of T (default RowDataPacket).
@@ -104,9 +107,10 @@ export const queryRequired = async <T extends { [key: string]: any } = RowDataPa
  */
 export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
-  conn?: Connection
+  conn?: Connection,
+  bufferOptions: BufferOptions = {}
 ): Promise<T | null> => {
-  return await (await getConnection(conn)).queryOne<T>(query);
+  return await (await getConnection(conn)).queryOne<T>(query, bufferOptions);
 };
 
 /**
@@ -118,9 +122,10 @@ export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>
 export const queryOneRequired = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
   conn?: Connection,
-  errorMessage?: string
+  errorMessage?: string,
+  bufferOptions: BufferOptions = {}
 ): Promise<T> => {
-  return (await getConnection(conn)).queryOneRequired<T>(query, errorMessage);
+  return (await getConnection(conn)).queryOneRequired<T>(query, errorMessage, bufferOptions);
 };
 
 /**
@@ -169,7 +174,10 @@ export class Connection {
    * Use query when doing SELECT. The expected result will be an array of RowDataPacket
    * @param query
    */
-  public async query<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T[]> {
+  public async query<T = RowDataPacket>(
+    query: Query | QueryObject | string,
+    bufferOptions: BufferOptions = {}
+  ): Promise<T[]> {
     const [statement, args = []] = asQuery(query);
     this.logSQL(statement, args);
     const response = await this.exec(statement, args);
@@ -178,34 +186,39 @@ export class Connection {
         'Return type error. query() should only be used for SELECT. For INSERT, UPDATE, DELETE and SET use execute()'
       );
     }
-    return response as T[];
+    return stringifyBufferValues(response as T[], bufferOptions);
   }
 
   public async queryRequired<T = RowDataPacket>(
     query: Query | QueryObject | string,
-    errorMessage?: string
+    errorMessage?: string,
+    bufferOptions: BufferOptions = {}
   ): Promise<[T] & T[]> {
-    const result = await this.query(query);
+    const result = await this.query(query, bufferOptions);
     if (!result?.length) {
       throw Error(errorMessage ?? `no results found for query ${JSON.stringify(asQuery(query))}`);
     }
-    return result as [T] & T[];
+    return stringifyBufferValues(result) as [T] & T[];
   }
 
-  public async queryOne<T = RowDataPacket>(query: Query | QueryObject | string): Promise<T | null> {
+  public async queryOne<T = RowDataPacket>(
+    query: Query | QueryObject | string,
+    bufferOptions: BufferOptions = {}
+  ): Promise<T | null> {
     const [result] = await this.query(query);
-    return (result as T) ?? null;
+    return result ? stringifyBufferValue(result as T, bufferOptions) : null;
   }
 
   public async queryOneRequired<T = RowDataPacket>(
     query: Query | QueryObject | string,
-    errorMessage?: string
+    errorMessage?: string,
+    bufferOptions: BufferOptions = {}
   ): Promise<T> {
-    const result = await this.queryOne(query);
+    const result = await this.queryOne(query, bufferOptions);
     if (!result) {
       throw Error(errorMessage ?? `no results found for query ${JSON.stringify(asQuery(query))}`);
     }
-    return result as T;
+    return stringifyBufferValue(result as T);
   }
 
   /**
