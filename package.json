@@ -1,6 +1,6 @@
 {
   "name": "neat-mysql",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "a neat way to interact with MySQL from Node.js",
   "main": "index.js",
   "scripts": {
@@ -43,7 +43,6 @@
     "inline-source-map": "^0.6.2",
     "jest": "^26.6.3",
     "mysql-schema-ts": "^1.6.2",
-    "prettier": "^1.19.1",
     "ts-jest": "^26.4.4",
     "tslib": "^2.1.0",
     "typescript": "^4.1.3"
