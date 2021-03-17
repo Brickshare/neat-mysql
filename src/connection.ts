@@ -1,4 +1,4 @@
-import { QueryArg, Query } from '@src/types';
+import { QueryArg, Query, QueryObject } from '@src/types';
 import { Client } from 'ssh2';
 import {
   createPool,
@@ -10,17 +10,9 @@ import {
   ResultSetHeader
 } from 'mysql2/promise';
 import logger from '@src/logger';
-import { formatSQL } from './util';
+import { asQuery, formatSQL } from './util';
 import config from 'config';
 import { BufferOptions, stringifyBufferValue, stringifyBufferValues } from './buffer';
-
-type QueryObject = { sql: string; values: QueryArg[] };
-const asQuery = (query: Query | QueryObject | string): [string] | [string, QueryArg[]] => {
-  if (typeof query === 'string') {
-    return [query];
-  }
-  return Array.isArray(query) ? (query as Query) : [query.sql, query.values];
-};
 
 const dbConfig = config.get<PoolOptions>('dbConfig');
 type SSHConfig = { host: string; port: number; username: string; password: string };

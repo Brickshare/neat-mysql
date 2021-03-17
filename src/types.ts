@@ -23,3 +23,5 @@ export type JSONValue = JSONPrimitive | JSONObject | JSONArray;
 export type QueryArg = JSONPrimitive | Date | Buffer | ArrayBuffer | JSONValue | QueryArg[] | undefined;
 
 export type Query = [string] | [string, QueryArg[]];
+
+export type QueryObject = { sql: string; values: QueryArg[] };

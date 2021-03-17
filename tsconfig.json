@@ -34,13 +34,14 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      "@src/*": ["src/*"]
+      "@src/*": ["src/*"],
+      "@test/*": ["test/*"]
     },
     "allowSyntheticDefaultImports": true,
 
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "include": ["src/**/*.ts", "src/**/*.json", "test/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.json", "test/**/*.ts", "test/**/*.test.ts"],
   "exclude": ["node_modules"]
 }
