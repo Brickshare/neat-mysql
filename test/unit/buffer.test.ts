@@ -1,5 +1,4 @@
 import { formatBuffer, stringifyBufferValues } from '@src/buffer';
-import 'jest';
 
 describe('formatBuffer', () => {
   it(`should return same value if it's not a buffer`, () => {
@@ -21,8 +20,8 @@ describe('formatBuffer', () => {
   });
 });
 
-describe('formatBuffer', () => {
-  it(`should format buffers values in object roots`, () => {
+describe('stringifyBufferValues', () => {
+  it(`should format buffer values in object roots`, () => {
     expect(stringifyBufferValues([], {})).toEqual([]);
     expect(
       stringifyBufferValues([{ hello: Buffer.from('you', 'ascii'), me: 'too' }], { specific: { hello: 'ascii' } })
