@@ -12,5 +12,8 @@
     "username": "SSH_USER",
     "password": "SSH_PASSWORD"
   },
-  "logLevel": "LOG_LEVEL"
+  "logLevel": "LOG_LEVEL",
+  "global": {
+    "nullToUndefined": "CONVERT_NULL_TO_UNDEFINED"
+  }
 }
