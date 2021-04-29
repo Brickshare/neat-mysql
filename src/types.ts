@@ -1,3 +1,6 @@
+import { BufferOptions } from './buffer';
+import { LogLevel } from './logger';
+
 /**
  * Helper types
  */
@@ -27,3 +30,9 @@ export type Query = [string] | [string, QueryArg[]];
 export type QueryObject = { sql: string; values: QueryArg[] };
 
 export type SSHConfig = { host: string; port: number; username: string; password: string };
+
+export type GenericOptions = {
+  nullToUndefined?: boolean;
+  logLevel?: LogLevel;
+  buffer?: BufferOptions;
+};

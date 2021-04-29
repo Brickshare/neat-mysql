@@ -6,6 +6,6 @@
     "user": "root",
     "password": "proot"
   },
-  "sshConfig": null,
-  "logLevel": "DEBUG"
+  "logLevel": "INFO",
+  "nullToUndefined": false
 }

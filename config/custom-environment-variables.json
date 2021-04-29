@@ -1,1 +1,4 @@
-{}
+{
+  "logLevel": "NEAT_MYSQL_LOG_LEVEL",
+  "nullToUndefined": "NEAT_MYSQL_NULL_TO_UNDEFINED"
+}
