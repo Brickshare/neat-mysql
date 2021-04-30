@@ -10,13 +10,15 @@ import {
   ResultSetHeader
 } from 'mysql2/promise';
 import logger from '@src/logger';
-import { asQuery, formatSQL } from './util';
+import { asQuery, formatSQL, deepConvertNullToUndefined } from './util';
 import config from 'config';
-import { BufferOptions, stringifyBufferValue, stringifyBufferValues } from './buffer';
+import { BufferOptions, stringifyBufferValues } from './buffer';
 
 const dbConfig = config.get<PoolOptions>('dbConfig');
 type SSHConfig = { host: string; port: number; username: string; password: string };
 const sshConfig = config.has('sshConfig') ? config.get<SSHConfig>('sshConfig') : null;
+
+const nullToUndefined = config.get<boolean>('global.nullToUndefined');
 
 const poolOptions: PoolOptions = {
   ...dbConfig,
@@ -68,6 +70,10 @@ export const connectToPool = async (): Promise<[Pool, Client?]> => {
 
 const getConnection = async (conn?: Connection) => conn || new Connection(await getPool());
 
+export const convertNullValuesToUndefined = <T extends Object>(entity: T | T[], enabled = false): T => {
+  return enabled ? deepConvertNullToUndefined(entity) : entity;
+};
+
 /**
  * SELECT from database. The expected result will be an array of T (default RowDataPacket)
  * @param query
@@ -77,7 +83,7 @@ export const query = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
   conn?: Connection,
   bufferOptions: BufferOptions = {}
-): Promise<T[]> => (await getConnection(conn)).query(query, bufferOptions);
+): Promise<T[]> => (await getConnection(conn)).query<T>(query, bufferOptions);
 
 /**
  * SELECT from database. The expected result will be an array of T (default RowDataPacket).
@@ -178,7 +184,9 @@ export class Connection {
         'Return type error. query() should only be used for SELECT. For INSERT, UPDATE, DELETE and SET use execute()'
       );
     }
-    return stringifyBufferValues(response as T[], bufferOptions);
+
+    const unbuffered = stringifyBufferValues(response as T[], bufferOptions);
+    return convertNullValuesToUndefined<T[]>(unbuffered, Boolean(nullToUndefined));
   }
 
   public async queryRequired<T = RowDataPacket>(
@@ -190,15 +198,15 @@ export class Connection {
     if (!result?.length) {
       throw Error(errorMessage ?? `no results found for query ${JSON.stringify(asQuery(query))}`);
     }
-    return stringifyBufferValues(result) as [T] & T[];
+    return result as [T] & T[];
   }
 
   public async queryOne<T = RowDataPacket>(
     query: Query | QueryObject | string,
     bufferOptions: BufferOptions = {}
   ): Promise<T | null> {
-    const [result] = await this.query(query);
-    return result ? stringifyBufferValue(result as T, bufferOptions) : null;
+    const [result] = await this.query(query, bufferOptions);
+    return result as T;
   }
 
   public async queryOneRequired<T = RowDataPacket>(
@@ -210,7 +218,7 @@ export class Connection {
     if (!result) {
       throw Error(errorMessage ?? `no results found for query ${JSON.stringify(asQuery(query))}`);
     }
-    return stringifyBufferValue(result as T);
+    return result as T;
   }
 
   /**

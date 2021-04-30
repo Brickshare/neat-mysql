@@ -6,6 +6,7 @@
     "user": "root",
     "password": ""
   },
-  "sshConfig": null,
-  "logLevel": "DEBUG"
+  "global": {
+    "nullToUndefined": false
+  }
 }
