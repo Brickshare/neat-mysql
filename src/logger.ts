@@ -5,6 +5,8 @@ import config from 'config';
 const env = config.util.getEnv('NODE_ENV');
 const jsonStringifyLog = ['test', 'production'].some(e => env.includes(e));
 
+export type LogLevel = 'DEBUG' | 'INFO' | 'ERROR';
+
 const { combine, timestamp, printf, splat } = format;
 
 const errorStackFormat = format(info => {
@@ -53,26 +55,27 @@ const logFormat = printf(info => {
 
   We are using winston levels
 */
-const logger = createLogger({
-  levels: wconfig.syslog.levels,
-  format: combine(
-    splat(),
-    errorStackFormat(),
-    timestamp(),
-    logFormat,
-    severity(),
-    ...(jsonStringifyLog ? [format.json()] : [])
-  ),
-  transports: [
-    new transports.Console({
-      level: config.has('logLevel') ? config.get('logLevel') : 'INFO'
-    })
-  ]
-});
+const logger = (logLevel?: 'DEBUG' | 'INFO' | 'ERROR') =>
+  createLogger({
+    levels: wconfig.syslog.levels,
+    format: combine(
+      splat(),
+      errorStackFormat(),
+      timestamp(),
+      logFormat,
+      severity(),
+      ...(jsonStringifyLog ? [format.json()] : [])
+    ),
+    transports: [
+      new transports.Console({
+        level: logLevel ?? config.has('logLevel') ? config.get('logLevel') : 'INFO'
+      })
+    ]
+  });
 
 export const httpStream = {
   write: (message: string) => {
-    logger.debug(message);
+    logger().debug(message);
   }
 };
 

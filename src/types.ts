@@ -25,3 +25,5 @@ export type QueryArg = JSONPrimitive | Date | Buffer | ArrayBuffer | JSONValue |
 export type Query = [string] | [string, QueryArg[]];
 
 export type QueryObject = { sql: string; values: QueryArg[] };
+
+export type SSHConfig = { host: string; port: number; username: string; password: string };

@@ -1,6 +1,6 @@
 {
   "name": "neat-mysql",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "a neat way to interact with MySQL from Node.js",
   "main": "index.js",
   "scripts": {
@@ -10,9 +10,9 @@
     "rewrite": "ef-tspm -c tsconfig.build.json",
     "distribute": "npm run build && npm publish dist",
     "test": "npm run test:unit",
-    "test:integration": "cross-env NODE_ENV=dev node ci/integrationTest.js integration",
-    "test:all": "cross-env NODE_ENV=dev node ci/integrationTest.js all",
-    "test:unit": "cross-env NODE_ENV=dev jest -c jest.config.unit.js",
+    "test:integration": "cross-env NODE_ENV=test node ci/integrationTest.js integration",
+    "test:all": "cross-env NODE_ENV=test node ci/integrationTest.js all",
+    "test:unit": "cross-env NODE_ENV=test jest -c jest.config.unit.js",
     "wait": "wait-on",
     "wait-on": "npm run wait -- tcp:$DB_HOST:3306"
   },

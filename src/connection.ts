@@ -1,165 +1,16 @@
 import { QueryArg, Query, QueryObject } from '@src/types';
-import { Client } from 'ssh2';
-import {
-  createPool,
-  PoolOptions,
-  Pool,
-  PoolConnection,
-  RowDataPacket,
-  OkPacket,
-  ResultSetHeader
-} from 'mysql2/promise';
-import logger from '@src/logger';
+import { Pool, PoolConnection, RowDataPacket, OkPacket, ResultSetHeader } from 'mysql2/promise';
+import logger, { LogLevel } from '@src/logger';
 import { asQuery, formatSQL } from './util';
-import config from 'config';
 import { BufferOptions, stringifyBufferValue, stringifyBufferValues } from './buffer';
-
-const dbConfig = config.get<PoolOptions>('dbConfig');
-type SSHConfig = { host: string; port: number; username: string; password: string };
-const sshConfig = config.has('sshConfig') ? config.get<SSHConfig>('sshConfig') : null;
-
-const poolOptions: PoolOptions = {
-  ...dbConfig,
-  waitForConnections: true,
-  maxPreparedStatements: 20,
-  queueLimit: 0,
-  stringifyObjects: false,
-  connectionLimit: sshConfig ? 1 : undefined
-};
-
-let pool: Pool | null = null;
-export const getPool = async () => {
-  if (!pool) {
-    pool = (await connectToPool())[0];
-  }
-  return pool!;
-};
-
-export const createNewPool = (stream?: any) => {
-  const pool = createPool({ ...poolOptions, stream });
-  pool.on('connection', connection => connection.query('SET SESSION transaction_isolation="READ-COMMITTED"'));
-  pool.on('enqueue', () => logger.debug('MySQL - Waiting for available connection slot'));
-  pool.on('acquire', connection => logger.debug('Connection %d acquired', connection.threadId));
-  pool.on('release', connection => logger.debug('Connection %d released', connection.threadId));
-  return pool;
-};
-
-export const connectToPool = async (): Promise<[Pool, Client?]> => {
-  if (!sshConfig) {
-    return [createNewPool()];
-  }
-
-  const sshClient = new Client();
-  const localhost = '127.0.0.1';
-
-  return new Promise((resolve, reject) => {
-    sshClient
-      .on('ready', async () => {
-        sshClient.forwardOut(localhost, 3306, dbConfig.host!, dbConfig.port!, async (err, stream) => {
-          if (err) {
-            reject(err);
-          }
-          resolve([createNewPool(stream), sshClient]);
-        });
-      })
-      .connect(sshConfig);
-  });
-};
-
-const getConnection = async (conn?: Connection) => conn || new Connection(await getPool());
-
-/**
- * SELECT from database. The expected result will be an array of T (default RowDataPacket)
- * @param query
- * @param connection
- */
-export const query = async <T extends { [key: string]: any } = RowDataPacket>(
-  query: Query | QueryObject | string,
-  conn?: Connection,
-  bufferOptions: BufferOptions = {}
-): Promise<T[]> => (await getConnection(conn)).query(query, bufferOptions);
-
-/**
- * SELECT from database. The expected result will be an array of T (default RowDataPacket).
- * Errors if no results are found.
- * @param query
- * @param connection
- */
-export const queryRequired = async <T extends { [key: string]: any } = RowDataPacket>(
-  query: Query | QueryObject | string,
-  conn?: Connection,
-  errorMessage?: string,
-  bufferOptions: BufferOptions = {}
-): Promise<[T] & T[]> => (await getConnection(conn)).queryRequired(query, errorMessage, bufferOptions);
-
-/**
- * SELECT one entity from database. The expected result will be an array of T (default RowDataPacket).
- * @param query
- * @param connection
- */
-export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>(
-  query: Query | QueryObject | string,
-  conn?: Connection,
-  bufferOptions: BufferOptions = {}
-): Promise<T | null> => {
-  return await (await getConnection(conn)).queryOne<T>(query, bufferOptions);
-};
-
-/**
- * SELECT one entity from database. The expected result will be an array of T (default RowDataPacket).
- * Errors if no results are found.
- * @param query
- * @param connection
- */
-export const queryOneRequired = async <T extends { [key: string]: any } = RowDataPacket>(
-  query: Query | QueryObject | string,
-  conn?: Connection,
-  errorMessage?: string,
-  bufferOptions: BufferOptions = {}
-): Promise<T> => {
-  return (await getConnection(conn)).queryOneRequired<T>(query, errorMessage, bufferOptions);
-};
-
-/**
- * Use execute when doing INSERT, UPDATE, DELETE or SET. The expected result will be a ResultSetHeader
- * @param query
- * @param connection
- */
-export const execute = async (query: Query | QueryObject | string, conn?: Connection): Promise<ResultSetHeader> =>
-  (await getConnection(conn)).execute(query);
-
-/**
- * Starts or continues a transaction. Automatically rolls back changes if an error occurs.
- * @param func method to run during transaction
- * @param transActionConnection active transaction connection to use
- */
-export const transaction = async <T>(
-  func: (conn: Connection) => Promise<T>,
-  transActionConnection?: Connection
-): Promise<T> => {
-  if (transActionConnection) {
-    return func(transActionConnection);
-  }
-  const conn = await (await getPool()).getConnection();
-  await conn.beginTransaction();
-  try {
-    const funcReturn = await func(new Connection(conn));
-    await conn.commit();
-    return funcReturn;
-  } catch (err) {
-    logger.error(err);
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
-  }
-};
 
 export class Connection {
   conn: Pool | PoolConnection;
+  public logLevel?: LogLevel;
 
-  constructor(conn: Pool | PoolConnection) {
+  constructor(conn: Pool | PoolConnection, logLevel?: LogLevel) {
     this.conn = conn;
+    this.logLevel = logLevel;
   }
 
   /**
@@ -249,12 +100,12 @@ export class Connection {
       const [response] = await this.conn.execute(sql, args);
       return response;
     } catch (err) {
-      logger.error(`${err} - failing SQL: ${formatSQL(sql, args)}`);
+      logger(this.logLevel).error(`${err} - failing SQL: ${formatSQL(sql, args)}`);
       throw Error(err);
     }
   }
 
   private logSQL(sql: string, args: QueryArg[]) {
-    logger.debug(formatSQL(sql, args));
+    logger(this.logLevel).debug(formatSQL(sql, args));
   }
 }

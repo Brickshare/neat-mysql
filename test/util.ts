@@ -1,13 +1,18 @@
-import { Connection, execute } from '@src/connection';
+import { Connection } from '@src/connection';
+import { execute } from '@src/init';
 
-export const migrateDatabase = async () => {
-  await execute(`
+export const migrateDatabase = async (connector: Connection) => {
+  await execute(
+    `
     CREATE TABLE IF NOT EXISTS a (
       id int(10) unsigned NOT NULL AUTO_INCREMENT,
       text VARCHAR(255) DEFAULT NULL,
       PRIMARY KEY (id)
-  )`);
-  await execute(`TRUNCATE TABLE a`);
+  )`,
+    connector
+  );
+  await execute(`TRUNCATE TABLE a`, connector);
 };
 
-export const insertSampleEntry = async (conn?: Connection) => await execute(`INSERT INTO a (text) VALUES ("")`, conn);
+export const insertSampleEntry = async (connector: Connection) =>
+  await execute(`INSERT INTO a (text) VALUES ("")`, connector);
