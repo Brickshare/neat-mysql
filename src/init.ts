@@ -1,13 +1,12 @@
 import { Client } from 'ssh2';
 import { createPool, Pool, PoolOptions, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-import logger, { LogLevel } from './logger';
+import logger from './logger';
 import { Connection } from './connection';
-import { Query, QueryObject, SSHConfig } from './types';
-import { BufferOptions } from './buffer';
+import { GenericOptions, Query, QueryObject, SSHConfig } from './types';
 
-export const connectToPool = async (options: PoolOptions, sshConfig?: SSHConfig): Promise<[Pool, Client?]> => {
+export const connectToPool = async (poolOptions: PoolOptions, sshConfig?: SSHConfig): Promise<[Pool, Client?]> => {
   if (!sshConfig) {
-    return [createNewPool(options)];
+    return [createNewPool(poolOptions)];
   }
 
   const sshClient = new Client();
@@ -16,18 +15,18 @@ export const connectToPool = async (options: PoolOptions, sshConfig?: SSHConfig)
   return new Promise((resolve, reject) => {
     sshClient
       .on('ready', async () => {
-        sshClient.forwardOut(localhost, 3306, options.host!, options.port!, async (err, stream) => {
+        sshClient.forwardOut(localhost, 3306, poolOptions.host!, poolOptions.port!, async (err, stream) => {
           if (err) {
             reject(err);
           }
-          resolve([createNewPool(options, stream), sshClient]);
+          resolve([createNewPool(poolOptions, stream), sshClient]);
         });
       })
       .connect(sshConfig);
   });
 };
 
-export const createNewPool = (poolOptions: PoolOptions, stream?: any, logLevel?: LogLevel) => {
+export const createNewPool = (poolOptions: PoolOptions, stream?: any, { logLevel }: GenericOptions = {}) => {
   const pool = createPool({ ...poolOptions, stream });
   pool.on('connection', connection => connection.query('SET SESSION transaction_isolation="READ-COMMITTED"'));
   pool.on('enqueue', () => logger(logLevel).debug('MySQL - Waiting for available connection slot'));
@@ -57,7 +56,7 @@ export const connectToDatabase = async (config: PoolOptions, sshConfig?: SSHConf
   return await getPool();
 };
 
-const getConnection = (connector: Connection | Pool): Connection => {
+const getConnection = (connector: Connection | Pool, options?: GenericOptions): Connection => {
   if (connector instanceof Connection) {
     return connector;
   }
@@ -72,8 +71,8 @@ const getConnection = (connector: Connection | Pool): Connection => {
 export const query = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
   connector: Connection | Pool,
-  bufferOptions: BufferOptions = {}
-): Promise<T[]> => getConnection(connector).query(query, bufferOptions);
+  options: GenericOptions = {}
+): Promise<T[]> => getConnection(connector, options).query(query);
 
 /**
  * SELECT from database. The expected result will be an array of T (default RowDataPacket).
@@ -85,8 +84,8 @@ export const queryRequired = async <T extends { [key: string]: any } = RowDataPa
   query: Query | QueryObject | string,
   connector: Connection | Pool,
   errorMessage?: string,
-  bufferOptions: BufferOptions = {}
-): Promise<[T] & T[]> => getConnection(connector).queryRequired(query, errorMessage, bufferOptions);
+  options: GenericOptions = {}
+): Promise<[T] & T[]> => getConnection(connector, options).queryRequired(query, errorMessage);
 
 /**
  * SELECT one entity from database. The expected result will be an array of T (default RowDataPacket).
@@ -96,9 +95,9 @@ export const queryRequired = async <T extends { [key: string]: any } = RowDataPa
 export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
   connector: Connection | Pool,
-  bufferOptions: BufferOptions = {}
+  options: GenericOptions = {}
 ): Promise<T | null> => {
-  return await getConnection(connector).queryOne<T>(query, bufferOptions);
+  return await getConnection(connector, options).queryOne<T>(query);
 };
 
 /**
@@ -111,9 +110,9 @@ export const queryOneRequired = async <T extends { [key: string]: any } = RowDat
   query: Query | QueryObject | string,
   connector: Connection | Pool,
   errorMessage?: string,
-  bufferOptions: BufferOptions = {}
+  options: GenericOptions = {}
 ): Promise<T> => {
-  return getConnection(connector).queryOneRequired<T>(query, errorMessage, bufferOptions);
+  return getConnection(connector, options).queryOneRequired<T>(query, errorMessage);
 };
 
 /**
@@ -121,8 +120,11 @@ export const queryOneRequired = async <T extends { [key: string]: any } = RowDat
  * @param query
  * @param connection
  */
-export const execute = async (query: Query | QueryObject | string, conn: Connection | Pool): Promise<ResultSetHeader> =>
-  getConnection(conn).execute(query);
+export const execute = async (
+  query: Query | QueryObject | string,
+  conn: Connection | Pool,
+  options: GenericOptions = {}
+): Promise<ResultSetHeader> => getConnection(conn, options).execute(query);
 
 /**
  * Starts or continues a transaction. Automatically rolls back changes if an error occurs.
@@ -130,21 +132,22 @@ export const execute = async (query: Query | QueryObject | string, conn: Connect
  * @param transActionConnection active transaction connection to use
  */
 export const transaction = async <T>(
-  func: (conn: Connection, logLevel?: LogLevel) => Promise<T>,
-  c: Connection | Pool
+  func: (conn: Connection) => Promise<T>,
+  c: Connection | Pool,
+  { logLevel, nullToUndefined }: GenericOptions = {}
 ): Promise<T> => {
   if (c instanceof Connection) {
-    return func(getConnection(c), c.logLevel);
+    return func(getConnection(c, { logLevel }));
   }
   const conn = await c.getConnection();
   await conn.beginTransaction();
-  const connection = new Connection(conn);
+  const connection = new Connection(conn, { logLevel, nullToUndefined });
   try {
     const funcReturn = await func(connection);
     await conn.commit();
     return funcReturn;
   } catch (err) {
-    logger(connection.logLevel).error(err);
+    logger(connection.options.logLevel).error(err);
     await conn.rollback();
     throw err;
   } finally {

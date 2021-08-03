@@ -1,16 +1,24 @@
-import { QueryArg, Query, QueryObject } from '@src/types';
+import { QueryArg, Query, QueryObject, GenericOptions } from '@src/types';
 import { Pool, PoolConnection, RowDataPacket, OkPacket, ResultSetHeader } from 'mysql2/promise';
-import logger, { LogLevel } from '@src/logger';
-import { asQuery, formatSQL } from './util';
-import { BufferOptions, stringifyBufferValue, stringifyBufferValues } from './buffer';
+import logger from '@src/logger';
+import { asQuery, formatSQL, deepConvertNullToUndefined } from './util';
+import { BufferOptions, stringifyBufferValues } from './buffer';
+import config from 'config';
+
+const convertNullValuesToUndefined = <T extends Object>(entity: T | T[], enabled = false): T => {
+  return enabled ? deepConvertNullToUndefined(entity) : entity;
+};
 
 export class Connection {
   conn: Pool | PoolConnection;
-  public logLevel?: LogLevel;
+  public options: GenericOptions;
 
-  constructor(conn: Pool | PoolConnection, logLevel?: LogLevel) {
+  constructor(conn: Pool | PoolConnection, options: GenericOptions = {}) {
     this.conn = conn;
-    this.logLevel = logLevel;
+    this.options = {
+      ...options,
+      nullToUndefined: options.nullToUndefined ?? config.has('nullToUndefined') ? config.get('nullToUndefined') : false
+    };
   }
 
   /**
@@ -29,7 +37,9 @@ export class Connection {
         'Return type error. query() should only be used for SELECT. For INSERT, UPDATE, DELETE and SET use execute()'
       );
     }
-    return stringifyBufferValues(response as T[], bufferOptions);
+
+    const unbuffered = stringifyBufferValues(response as T[], bufferOptions ?? this.options.buffer);
+    return convertNullValuesToUndefined<T[]>(unbuffered, Boolean(this.options.nullToUndefined));
   }
 
   public async queryRequired<T = RowDataPacket>(
@@ -37,19 +47,19 @@ export class Connection {
     errorMessage?: string,
     bufferOptions: BufferOptions = {}
   ): Promise<[T] & T[]> {
-    const result = await this.query(query, bufferOptions);
+    const result = await this.query(query, bufferOptions ?? this.options.buffer);
     if (!result?.length) {
       throw Error(errorMessage ?? `no results found for query ${JSON.stringify(asQuery(query))}`);
     }
-    return stringifyBufferValues(result) as [T] & T[];
+    return result as [T] & T[];
   }
 
   public async queryOne<T = RowDataPacket>(
     query: Query | QueryObject | string,
     bufferOptions: BufferOptions = {}
   ): Promise<T | null> {
-    const [result] = await this.query(query);
-    return result ? stringifyBufferValue(result as T, bufferOptions) : null;
+    const [result] = await this.query(query, bufferOptions ?? this.options.buffer);
+    return result as T;
   }
 
   public async queryOneRequired<T = RowDataPacket>(
@@ -57,11 +67,11 @@ export class Connection {
     errorMessage?: string,
     bufferOptions: BufferOptions = {}
   ): Promise<T> {
-    const result = await this.queryOne(query, bufferOptions);
+    const result = await this.queryOne(query, bufferOptions ?? this.options.buffer);
     if (!result) {
       throw Error(errorMessage ?? `no results found for query ${JSON.stringify(asQuery(query))}`);
     }
-    return stringifyBufferValue(result as T);
+    return result as T;
   }
 
   /**
@@ -100,12 +110,12 @@ export class Connection {
       const [response] = await this.conn.execute(sql, args);
       return response;
     } catch (err) {
-      logger(this.logLevel).error(`${err} - failing SQL: ${formatSQL(sql, args)}`);
+      logger(this.options.logLevel).error(`${err} - failing SQL: ${formatSQL(sql, args)}`);
       throw Error(err);
     }
   }
 
   private logSQL(sql: string, args: QueryArg[]) {
-    logger(this.logLevel).debug(formatSQL(sql, args));
+    logger(this.options.logLevel).debug(formatSQL(sql, args));
   }
 }

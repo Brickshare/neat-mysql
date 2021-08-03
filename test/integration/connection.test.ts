@@ -49,7 +49,7 @@ describe('queryRequired', () => {
 describe('queryOne', () => {
   it(`should execute a query on the database`, async () => {
     const result = await queryOne(`SELECT * FROM a`, await connector);
-    expect(result).toEqual(null);
+    expect(result).toEqual(undefined);
   });
 
   it(`should return object from the database`, async () => {
