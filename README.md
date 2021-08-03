@@ -14,32 +14,25 @@ npm i neat-mysql
 
 ### Environment
 
-`neat-mysql` requires the following environment variables to work. Not providing these results in an exception at runtime (example values inserted).
+The following env variables can be used to modify global behaviour:
 
 ```
-DB_HOST=localhost
-DB_PORT=3306
-DB_DATABASE=database
-DB_USERNAME=root
-DB_PASSWORD=verysecretpassword
-```
-
-You can optionally provide the following variables to connect through an SSH tunnel (example values inserted):
-
-```
-SSH_HOST={some ip}
-SSH_PORT=22
-SSH_USER=user
-SSH_PASSWORD=password
-```
-
-Logging level is controlled with an environment variable as well:
-
-```
-LOG_LEVEL=info // default
+NEAT_MYSQL_LOG_LEVEL // (default=INFO) controls logging output
+NEAT_MYSQL_NULL_TO_UNDEFINED // (default=false) returns 'undefined' instead of 'null' from queries
 ```
 
 ## Usage
+
+```
+const dbConfig = {
+  host: "localhost",
+  port: 3306,
+  database: "database",
+  user: "root",
+  password: "root"
+};
+const connector = connectToDatabase(dbConfig);
+```
 
 ### Query
 
@@ -56,12 +49,12 @@ interface Person {
 async function findPerson(id: number): Promise<Person | undefined> {
   const person = await queryOne<Person>([`
     SELECT id, name FROM people WHERE id = ?
-  `, [id]])
+  `, [id]], await connector)
   return person;
 }
 
 async function findPeople(): Promise<Person[]> {
-  const people = await query<Person>([`SELECT id, name FROM people`])
+  const people = await query<Person>(`SELECT id, name FROM people`, await connector)
   return people;
 }
 
@@ -79,7 +72,7 @@ import { execute } from 'neat-mysql';
 async function deletePerson(id: number) {
   const result = await execute([`
     DELETE FROM people WHERE id = ?
-  `, [id]])
+  `, [id]], await connector)
   return result;
 }
 
@@ -100,7 +93,7 @@ async function doLotsOfStuff(): Promise<Person[]> {
 
     const people = await connection.query<Person>([`SELECT id, name FROM people`])
     return people;
-  })
+  }, await connector)
 }
 
 ```
@@ -117,7 +110,7 @@ async function doLotsOfStuff(): Promise<Person[]> {
 
     const people = await query<Person>([`SELECT id, name FROM people`], connection)
     return people;
-  })
+  }, await connector)
 }
 
 ...
