@@ -56,7 +56,13 @@ export const connectToDatabase = async (config: PoolOptions, sshConfig?: SSHConf
   return await getPool();
 };
 
-const getConnection = (connector: Connection | Pool, options?: GenericOptions): Connection => {
+const getConnection = async (
+  connector: Connection | Pool | Promise<Connection | Pool>,
+  options?: GenericOptions
+): Promise<Connection> => {
+  if (connector instanceof Promise) {
+    return getConnection(await connector);
+  }
   if (connector instanceof Connection) {
     return connector;
   }
@@ -70,9 +76,9 @@ const getConnection = (connector: Connection | Pool, options?: GenericOptions): 
  */
 export const query = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
-  connector: Connection | Pool,
+  connector: Connection | Pool | Promise<Connection | Pool>,
   options: GenericOptions = {}
-): Promise<T[]> => getConnection(connector, options).query(query);
+): Promise<T[]> => (await getConnection(connector, options)).query(query);
 
 /**
  * SELECT from database. The expected result will be an array of T (default RowDataPacket).
@@ -82,10 +88,10 @@ export const query = async <T extends { [key: string]: any } = RowDataPacket>(
  */
 export const queryRequired = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
-  connector: Connection | Pool,
+  connector: Connection | Pool | Promise<Connection | Pool>,
   errorMessage?: string,
   options: GenericOptions = {}
-): Promise<[T] & T[]> => getConnection(connector, options).queryRequired(query, errorMessage);
+): Promise<[T] & T[]> => (await getConnection(connector, options)).queryRequired(query, errorMessage);
 
 /**
  * SELECT one entity from database. The expected result will be an array of T (default RowDataPacket).
@@ -94,10 +100,10 @@ export const queryRequired = async <T extends { [key: string]: any } = RowDataPa
  */
 export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
-  connector: Connection | Pool,
+  connector: Connection | Pool | Promise<Connection | Pool>,
   options: GenericOptions = {}
 ): Promise<T | null> => {
-  return await getConnection(connector, options).queryOne<T>(query);
+  return await (await getConnection(connector, options)).queryOne<T>(query);
 };
 
 /**
@@ -108,11 +114,11 @@ export const queryOne = async <T extends { [key: string]: any } = RowDataPacket>
  */
 export const queryOneRequired = async <T extends { [key: string]: any } = RowDataPacket>(
   query: Query | QueryObject | string,
-  connector: Connection | Pool,
+  connector: Connection | Pool | Promise<Connection | Pool>,
   errorMessage?: string,
   options: GenericOptions = {}
 ): Promise<T> => {
-  return getConnection(connector, options).queryOneRequired<T>(query, errorMessage);
+  return (await getConnection(connector, options)).queryOneRequired<T>(query, errorMessage);
 };
 
 /**
@@ -122,9 +128,9 @@ export const queryOneRequired = async <T extends { [key: string]: any } = RowDat
  */
 export const execute = async (
   query: Query | QueryObject | string,
-  conn: Connection | Pool,
+  connector: Connection | Pool | Promise<Connection | Pool>,
   options: GenericOptions = {}
-): Promise<ResultSetHeader> => getConnection(conn, options).execute(query);
+): Promise<ResultSetHeader> => (await getConnection(connector, options)).execute(query);
 
 /**
  * Starts or continues a transaction. Automatically rolls back changes if an error occurs.
@@ -133,11 +139,14 @@ export const execute = async (
  */
 export const transaction = async <T>(
   func: (conn: Connection) => Promise<T>,
-  c: Connection | Pool,
+  c: Connection | Pool | Promise<Connection | Pool>,
   { logLevel, nullToUndefined }: GenericOptions = {}
 ): Promise<T> => {
+  if (c instanceof Promise) {
+    return await transaction(func, await c);
+  }
   if (c instanceof Connection) {
-    return func(getConnection(c, { logLevel }));
+    return func(await getConnection(c, { logLevel }));
   }
   const conn = await c.getConnection();
   await conn.beginTransaction();
