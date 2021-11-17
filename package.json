@@ -30,7 +30,7 @@
     "config": "^3.3.3",
     "mysql2": "^2.2.5",
     "sqlstring": "^2.3.2",
-    "ssh2": "^0.8.9",
+    "ssh2": "^1.5.0",
     "winston": "^3.3.3",
     "winston-gke-formatter": "0.0.2"
   },
